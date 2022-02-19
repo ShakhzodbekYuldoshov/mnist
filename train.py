@@ -14,8 +14,10 @@ TRAINING_STEPS = 3000
 BATCH_SIZE = 250
 DISPLAY_STEP = 100
 
+optimizer = tf.keras.optimizers.SGD(LR)
 
-def neural_net(inputData):
+
+def neural_net(inputData, weights, biases):
     # Hidden fully connected layer with 512 neurons
     hidden_layer = tf.add(tf.matmul(inputData, weights['h']), biases['b'])
     # Apply sigmoid to hidden_layer output for non-linearity.
@@ -54,6 +56,12 @@ def run_optimization(x, y):
     optimizer.apply_gradients(zip(gradients, trainable_variables))
 
 
+def accuracy(y_pred, y_true):
+    # Predicted class is the index of a highest score in prediction vecotr(i.e. argmax)
+    correct_prediction = tf.equal(tf.argmax(y_pred, 1), tf.cast(y_true, tf.int64))
+    return tf.reduce_mean(tf.cast(correct_prediction, tf.float32), axis=-1)
+
+
 # PREPARE DATASET
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
@@ -68,6 +76,7 @@ x_train, x_test = x_train / 255. , x_test / 255.
 
 # Networkk parametrs
 n_hidden = 512
+
 
 # Store layer's weights and bias
 
@@ -87,4 +96,3 @@ biases = {
 print(weights['h'].shape, weights['out'].shape)
 print(biases['b'].shape, biases['out'].shape)
 
-optimizer = tf.keras.optimizers.SGD(LR)
