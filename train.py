@@ -4,6 +4,17 @@ import tensorflow as tf
 from tensorflow.keras.datasets import mnist
 
 
+# MNIST dataset parameters
+NUM_CLASSES = 10 # total classes (0-9 digits)
+NUM_FEATURES = 784 # data features (img shape: 28*28=784)
+
+# Training parameters
+LR = 0.001
+TRAINING_STEPS = 3000
+BATCH_SIZE = 250
+DISPLAY_STEP = 100
+
+
 def neural_net(inputData):
     # Hidden fully connected layer with 512 neurons
     hidden_layer = tf.add(tf.matmul(inputData, weights['h']), biases['b'])
@@ -16,28 +27,34 @@ def neural_net(inputData):
     return tf.nn.softmax(out_layer)
 
 
-def cross_entropy(y_pred, y_true, num_classes):
+def cross_entropy(y_pred, y_true):
     # Encode label to a one hot vector
     # our y_true[0] is equal to 1
     # in one hot vector format y_true[0] is equal to [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]
-    y_true = tf.one_hot(y_true, depth=num_classes)
+    y_true = tf.one_hot(y_true, depth=NUM_CLASSES)
     # Clip prediction values to avoid log(0) error
     y_pred = tf.clip_by_value(y_pred, 1e-9, 1.)
     # compute cross-entropy
     return tf.reduce_mean(-tf.reduce_sum(y_true * tf.math.log(y_pred)))
 
 
+def run_optimization(x, y):
+    # Wrap computation inside aa GradientTape for automatic differentiation
+    with tf.GradientTape() as g:
+        pred = neural_net(x)
+        loss = cross_entropy(pred, y, NUM_CLASSES)
+    
+    # Variables to update, trainable variables
+    trainable_variables = list(weights.values()) + list(biases.values())
 
-# MNIST dataset parameters
-NUM_CLASSES = 10 # total classes (0-9 digits)
-NUM_FEATURES = 784 # data features (img shape: 28*28=784)
+    # Compute gradients
+    gradients = g.gradient(loss, trainable_variables)
 
-# Training parameters
-LR = 0.001
-TRAINING_STEPS = 3000
-BATCH_SIZE = 250
-DISPLAY_STEP = 100
+    # updatte weight adn biases following gradients
+    optimizer.apply_gradients(zip(gradients, trainable_variables))
 
+
+# PREPARE DATASET
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
 # Convert to float32
@@ -69,3 +86,5 @@ biases = {
 
 print(weights['h'].shape, weights['out'].shape)
 print(biases['b'].shape, biases['out'].shape)
+
+optimizer = tf.keras.optimizers.SGD(LR)
